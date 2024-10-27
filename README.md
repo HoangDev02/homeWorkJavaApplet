@@ -2,3 +2,6 @@ Setting Java Card Developer Kit Simulator version 24.1: https://www.oracle.com/j
 
 References: https://docs.oracle.com/en/java/javacard/3.2/jcdksu/java-card-development-kit-simulator-user-guide.pdf
 
+Run project: 
+    (1) : build.bat
+    (2) : run.bat
