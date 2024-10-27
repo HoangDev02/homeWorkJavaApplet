@@ -56,7 +56,7 @@ public class AMSMyApplet {
 			AMSession undeploy = ams.openSession(isdAID).uninstall(sAID_AppletInstance).unload(sAID_CAP).close();
 
 			Scanner scanner = new Scanner(System.in);
-			
+			// Input for Applet with 9 character requirement
 			String inputApplet;
 			do {
 				System.out.print("Enter Input Applet (must be 9 characters): ");
@@ -69,6 +69,7 @@ public class AMSMyApplet {
 
 			byte[] inputBytes = inputApplet.getBytes();
 
+			// Input for Client with 9 character requirement
 			String inputData;
 			do {
 				System.out.print("Enter Input Client (must be 9 characters): ");
