@@ -1,0 +1,115 @@
+package com.oracle.javacard.sample;
+
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Properties;
+
+import javax.smartcardio.Card;
+import javax.smartcardio.CardChannel;
+import javax.smartcardio.CardException;
+import javax.smartcardio.CardTerminal;
+import javax.smartcardio.CommandAPDU;
+import javax.smartcardio.ResponseAPDU;
+import javax.smartcardio.TerminalFactory;
+
+import com.oracle.javacard.ams.AMService;
+import com.oracle.javacard.ams.AMServiceFactory;
+import com.oracle.javacard.ams.AMSession;
+import com.oracle.javacard.ams.config.AID;
+import com.oracle.javacard.ams.config.CAPFile;
+
+public class AMSHelloWorldClient {
+
+	static final String isdAID = "aid:A000000151000000";
+	static final String sAID_CAP = "aid:a00000006203010C01";
+	static final String sAID_AppletClass = "aid:a00000006203010C0101";
+	static final String sAID_AppletInstance = "aid:a00000006203010C0101";
+	static final CommandAPDU selectApplet = new CommandAPDU(0x00, 0xA4, 0x04, 0x00,
+			AID.from(sAID_AppletInstance).toBytes(), 256);
+	private static final byte[] DATA_TO_SEND = "DATA_ABCD".getBytes(); // The input data to compare
+
+	/**
+	 * Launch the sample
+	 * 
+	 * @param args command arguments. Use {@code -cap=<capfile> -props=<propsfile>}
+	 */
+	public static void main(String[] args) {
+		try {
+			CAPFile appFile = CAPFile.from(getArg(args, "cap"));
+			Properties props = new Properties();
+			props.load(new FileInputStream(getArg(args, "props")));
+
+			AMService ams = AMServiceFactory.getInstance("GP2.2");
+			ams.setProperties(props);
+			for (String key : ams.getPropertiesKeys()) {
+				System.out.println(key + " = " + ams.getProperty(key));
+			}
+
+			AMSession deploy = ams.openSession(isdAID).load(sAID_CAP, appFile.getBytes())
+					.install(sAID_CAP, sAID_AppletClass, sAID_AppletInstance).close();
+
+			CardTerminal terminal = getTerminal("socket", "127.0.0.1", "9025");
+			Card card = terminal.connect("*");
+			CardChannel channel = card.getBasicChannel();
+			ResponseAPDU response;
+
+			// Select the applet
+			response = channel.transmit(selectApplet);
+			System.out.println("Select Applet Response: " + response);
+
+			// Set target data
+			CommandAPDU setDataCommand = new CommandAPDU(0x80, 0x10, 0x00, 0x00, DATA_TO_SEND);
+			response = channel.transmit(setDataCommand);
+			System.out.println("Set Data Response: " + response);
+
+			// Compare data
+			response = channel.transmit(new CommandAPDU(0x80, 0x20, 0x00, 0x00, DATA_TO_SEND));
+			System.out.println("Compare Data Response: " + response);
+
+			// Application Management session used to undeploy CAPFile
+			AMSession undeploy = ams.openSession(isdAID).uninstall(sAID_AppletInstance).unload(sAID_CAP).close();
+
+			card.disconnect(true);
+			System.out.println("Application uninstalled and card disconnected.");
+
+		} catch (NoSuchAlgorithmException | NoSuchProviderException | CardException | IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	private static String getArg(String[] args, String argName) throws IllegalArgumentException {
+		String value = null;
+
+		for (String param : args) {
+			if (param.startsWith("-" + argName + "=")) {
+				value = param.substring(param.indexOf('=') + 1);
+			}
+		}
+
+		if (value == null || value.length() == 0) {
+			throw new IllegalArgumentException("Argument " + argName + " is missing");
+		}
+
+		return value;
+	}
+
+	private static CardTerminal getTerminal(String... connectionParams)
+			throws NoSuchAlgorithmException, NoSuchProviderException, CardException {
+		TerminalFactory tf;
+		String connectivityType = connectionParams[0];
+		if (connectivityType.equals("socket")) {
+			String ipaddr = connectionParams[1];
+			String port = connectionParams[2];
+			tf = TerminalFactory.getInstance("SocketCardTerminalFactoryType",
+					List.of(new InetSocketAddress(ipaddr, Integer.parseInt(port))), "SocketCardTerminalProvider");
+		} else {
+			tf = TerminalFactory.getDefault();
+		}
+		return tf.terminals().list().get(0);
+	}
+}

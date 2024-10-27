@@ -1,0 +1,74 @@
+package com.oracle.javacard.sample;
+
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.util.List;
+
+import javax.smartcardio.Card;
+import javax.smartcardio.CardChannel;
+import javax.smartcardio.CardException;
+import javax.smartcardio.CardTerminal;
+import javax.smartcardio.CommandAPDU;
+import javax.smartcardio.ResponseAPDU;
+import javax.smartcardio.TerminalFactory;
+
+public class AMSHelloWorldClient {
+
+    static final String isdAID = "aid:A000000151000000"; // AID của Service Descriptor
+    static final String sAID_AppletInstance = "aid:a00000006203010C0101"; // AID của instance applet
+    static final CommandAPDU selectApplet = new CommandAPDU(0x00, 0xA4, 0x04, 0x00, AID.from(sAID_AppletInstance).toBytes(), 256);
+    
+    // Lệnh bạn muốn kiểm tra
+    private static final byte INS_COMPARE_DATA = (byte) 0x10;
+
+    public static void main(String[] args) {
+        try {
+            // Kiểm tra các thông số đầu vào
+            if (args.length < 2) {
+                throw new IllegalArgumentException("Arguments for cap file and properties are missing.");
+            }
+            
+            // Tải file CAP và cấu hình
+            Properties props = new Properties();
+            props.load(new FileInputStream(args[1])); // args[1] là đường dẫn đến file properties
+
+            // Kết nối với Card Terminal
+            CardTerminal terminal = getTerminal("socket", "127.0.0.1", "9025");
+            Card card = terminal.connect("*");
+            CardChannel channel = card.getBasicChannel();
+
+            // Gửi lệnh chọn applet
+            ResponseAPDU responseSelect = channel.transmit(selectApplet);
+            System.out.println("Select Applet Response: " + responseSelect.toString());
+
+            // Gửi lệnh so sánh dữ liệu
+            CommandAPDU compareDataCommand = new CommandAPDU(0x80, INS_COMPARE_DATA, 0x00, 0x00, new byte[] { 'D', 'A', 'T', 'A', '_', 'A', 'B', 'C', 'D' });
+            ResponseAPDU compareDataResponse = channel.transmit(compareDataCommand);
+            System.out.println("Compare Data Response: " + compareDataResponse.toString());
+
+            // Đóng kết nối
+            card.disconnect(true);
+
+        } catch (NoSuchAlgorithmException | NoSuchProviderException | CardException | IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static CardTerminal getTerminal(String... connectionParams) throws NoSuchAlgorithmException, NoSuchProviderException, CardException {
+        TerminalFactory tf;
+        String connectivityType = connectionParams[0];
+        if (connectivityType.equals("socket")) {
+            String ipaddr = connectionParams[1];
+            String port = connectionParams[2];
+            tf = TerminalFactory.getInstance("SocketCardTerminalFactoryType",
+                    List.of(new InetSocketAddress(ipaddr, Integer.parseInt(port))),
+                    "SocketCardTerminalProvider");
+        } else {
+            tf = TerminalFactory.getDefault();
+        }
+        return tf.terminals().list().get(0);
+    }
+}

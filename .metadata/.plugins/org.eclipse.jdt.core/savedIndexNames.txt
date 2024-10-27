@@ -1,0 +1,6 @@
+INDEX VERSION 1.132+D:\testApplet\.metadata\.plugins\org.eclipse.jdt.core
+3543825071.index
+1986170408.index
+211692447.index
+1865797976.index
+1603186673.index

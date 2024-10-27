@@ -1,0 +1,210 @@
+// converted by version  [v24.1]
+// on Mon Oct 28 02:25:33 ICT 2024
+
+.package com/example/myapplet {
+	.aid 0xA0:0x0:0x0:0x0:0x62:0x3:0x1:0xC:0x1;
+	.version 1.0;
+
+	.imports {
+		0xA0:0x0:0x0:0x0:0x62:0x1:0x1 1.9;		//javacard/framework
+		0xA0:0x0:0x0:0x0:0x62:0x0:0x1 1.0;		//java/lang
+	}
+
+	.applet {
+		0xA0:0x0:0x0:0x0:0x62:0x3:0x1:0xC:0x1:0x1 myapplet;
+	}
+
+	.constantPool {
+		// 0
+		instanceFieldRef byte[] myapplet/targetData;
+		// 1
+		.classRef myapplet;
+		// 2
+		staticMethodRef 0.3.0()V;		// javacard/framework/Applet.<init>()V
+		// 3
+		staticMethodRef myapplet/<init>()V;
+		// 4
+		virtualMethodRef 0.3.1()V;		// register()V
+		// 5
+		virtualMethodRef 0.10.1()[B;		// getBuffer()[B
+		// 6
+		virtualMethodRef 0.3.3()Z;		// selectingApplet()Z
+		// 7
+		staticMethodRef myapplet/setTargetData(Ljavacard/framework/APDU;[B)V;
+			.descriptor	Ljavacard/framework/APDU;	0.10;
+
+		// 8
+		staticMethodRef myapplet/handleCompareData(Ljavacard/framework/APDU;[B)V;
+			.descriptor	Ljavacard/framework/APDU;	0.10;
+
+		// 9
+		staticMethodRef 0.7.1(S)V;		// javacard/framework/ISOException.throwIt(S)V
+		// 10
+		virtualMethodRef 0.10.6()S;		// setIncomingAndReceive()S
+		// 11
+		staticMethodRef 0.16.1([BS[BSS)S;		// javacard/framework/Util.arrayCopy([BS[BSS)S
+		// 12
+		staticMethodRef 0.16.0([BS[BSS)B;		// javacard/framework/Util.arrayCompare([BS[BSS)B
+		// 13
+		virtualMethodRef 0.10.7()S;		// setOutgoing()S
+		// 14
+		virtualMethodRef 0.10.9(S)V;		// setOutgoingLength(S)V
+		// 15
+		virtualMethodRef 0.10.4(SS)V;		// sendBytes(SS)V
+	}
+
+	.class public myapplet 0 extends 0.3 {		// extends javacard/framework/Applet
+
+		.fields {
+			private byte[] targetData 0;		// [B
+			static final byte INS_SET_TARGET_DATA = 48;		// B
+			static final byte INS_COMPARE_DATA = 16;		// B
+		}
+
+		.publicMethodTable 7 8 {
+			equals(Ljava/lang/Object;)Z 0;
+			register()V 1;
+			register([BSB)V 2;
+			selectingApplet()Z 3;
+			deselect()V 4;
+			getShareableInterfaceObject(Ljavacard/framework/AID;B)Ljavacard/framework/Shareable; 5;
+			select()Z 6;
+			process(Ljavacard/framework/APDU;)V 7;
+		}
+
+		.packageMethodTable 0 {
+		}
+
+		.method public static install([BSB)V 0 {
+			.stack 2;
+			.locals 0;
+
+				L0:	new 1;		// com/example/myapplet/myapplet
+					dup;
+					invokespecial 3;		// com/example/myapplet/myapplet.<init>()V
+					pop;
+					return;
+		}
+
+		.method protected <init>()V 1 {
+			.stack 2;
+			.locals 0;
+
+				L0:	aload_0;
+					invokespecial 2;		// javacard/framework/Applet.<init>()V
+					aload_0;
+					bspush 9;
+					newarray 11;
+					putfield_a 0;		// reference com/example/myapplet/myapplet.targetData
+					aload_0;
+					invokevirtual 4;		// register()V
+					return;
+		}
+
+		.method public process(Ljavacard/framework/APDU;)V 7 {
+			.stack 3;
+			.locals 2;
+
+			.descriptor	Ljavacard/framework/APDU;	0.10;
+
+				L0:	aload_1;
+					invokevirtual 5;		// getBuffer()[B
+					astore_2;
+				L1:	aload_0;
+					invokevirtual 6;		// selectingApplet()Z
+					ifeq L3;
+				L2:	return;
+				L3:	aload_2;
+					sconst_1;
+					baload;
+					sstore_3;
+				L4:	sload_3;
+					slookupswitch L7 2 16 L6 48 L5;
+				L5:	aload_0;
+					aload_1;
+					aload_2;
+					invokespecial 7;		// com/example/myapplet/myapplet.setTargetData(Ljavacard/framework/APDU;[B)V
+					goto L8;
+				L6:	aload_0;
+					aload_1;
+					aload_2;
+					invokespecial 8;		// com/example/myapplet/myapplet.handleCompareData(Ljavacard/framework/APDU;[B)V
+					goto L8;
+				L7:	sspush 27904;
+					invokestatic 9;		// javacard/framework/ISOException.throwIt(S)V
+				L8:	return;
+		}
+
+		.method private setTargetData(Ljavacard/framework/APDU;[B)V {
+			.stack 5;
+			.locals 1;
+
+			.descriptor	Ljavacard/framework/APDU;	0.10;
+
+				L0:	aload_1;
+					invokevirtual 10;		// setIncomingAndReceive()S
+					sstore_3;
+				L1:	sload_3;
+					bspush 9;
+					if_scmpeq L3;
+				L2:	sspush 26368;
+					invokestatic 9;		// javacard/framework/ISOException.throwIt(S)V
+				L3:	aload_2;
+					sconst_5;
+					getfield_a_this 0;		// reference com/example/myapplet/myapplet.targetData
+					sconst_0;
+					sload_3;
+					invokestatic 11;		// javacard/framework/Util.arrayCopy([BS[BSS)S
+					pop;
+					return;
+		}
+
+		.method private handleCompareData(Ljavacard/framework/APDU;[B)V {
+			.stack 5;
+			.locals 2;
+
+			.descriptor	Ljavacard/framework/APDU;	0.10;
+
+				L0:	aload_1;
+					invokevirtual 10;		// setIncomingAndReceive()S
+					sstore_3;
+				L1:	sload_3;
+					bspush 9;
+					if_scmpeq L3;
+				L2:	sspush 26368;
+					invokestatic 9;		// javacard/framework/ISOException.throwIt(S)V
+				L3:	aload_2;
+					sconst_5;
+					getfield_a_this 0;		// reference com/example/myapplet/myapplet.targetData
+					sconst_0;
+					sload_3;
+					invokestatic 12;		// javacard/framework/Util.arrayCompare([BS[BSS)B
+					ifne L5;
+				L4:	sconst_1;
+					goto L6;
+				L5:	sconst_0;
+				L6:	sstore 4;
+				L7:	aload_1;
+					invokevirtual 13;		// setOutgoing()S
+					pop;
+					aload_1;
+					sconst_1;
+					invokevirtual 14;		// setOutgoingLength(S)V
+					aload_2;
+					sconst_0;
+					sload 4;
+					ifeq L9;
+				L8:	sconst_1;
+					goto L10;
+				L9:	sconst_0;
+				L10:	bastore;
+					aload_1;
+					sconst_0;
+					sconst_1;
+					invokevirtual 15;		// sendBytes(SS)V
+					return;
+		}
+
+	}
+
+}

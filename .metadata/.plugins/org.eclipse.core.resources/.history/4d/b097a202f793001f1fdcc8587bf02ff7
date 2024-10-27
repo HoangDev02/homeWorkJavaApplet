@@ -1,0 +1,81 @@
+package com.oracle.jcclassic.samples.helloworld;
+
+import javacard.framework.APDU;
+import javacard.framework.Applet;
+import javacard.framework.ISO7816;
+import javacard.framework.ISOException;
+import javacard.framework.Util;
+
+public class HelloWorld extends Applet {
+    private static final byte INS_SET_TARGET_DATA = (byte) 0x10; // Instruction for setting TARGET_DATA
+    private static final byte INS_COMPARE_DATA = (byte) 0x20; // Instruction for comparing input data
+    private byte[] targetData;
+    private static final byte[] DEFAULT_TARGET_DATA = { 'D', 'A', 'T', 'A', '_', 'A', 'B', 'C', 'D', '1' }; // Predefined target data
+
+    /**
+     * Only this class's install method should create the applet object.
+     */
+    protected HelloWorld() {
+        register();
+        targetData = new byte[DEFAULT_TARGET_DATA.length];
+        Util.arrayCopyNonAtomic(DEFAULT_TARGET_DATA, (short) 0, targetData, (short) 0, (short) DEFAULT_TARGET_DATA.length);
+    }
+
+    /**
+     * Installs this applet.
+     *
+     * @param bArray  the array containing installation parameters
+     * @param bOffset the starting offset in bArray
+     * @param bLength the length in bytes of the parameter data in bArray
+     */
+    public static void install(byte[] bArray, short bOffset, byte bLength) {
+        new HelloWorld();
+    }
+
+    /**
+     * Processes an incoming APDU.
+     *
+     * @see APDU
+     * @param apdu the incoming APDU
+     * @exception ISOException with the response bytes per ISO 7816-4
+     */
+    @Override
+    public void process(APDU apdu) {
+        byte[] buffer = apdu.getBuffer();
+
+        // Check SELECT APDU command
+        if (selectingApplet()) {
+            return;
+        }
+        byte ins = buffer[ISO7816.OFFSET_INS]; // Get the instruction byte
+
+        // Handle instruction for setting TARGET_DATA
+        if (ins == INS_SET_TARGET_DATA) {
+            short length = apdu.setIncomingAndReceive();
+            if (length > targetData.length) {
+                ISOException.throwIt(ISO7816.SW_WRONG_LENGTH); // Error if input length is too large
+            }
+            // Copy input data to targetData
+            Util.arrayCopyNonAtomic(buffer, ISO7816.OFFSET_CDATA, targetData, (short) 0, length);
+            return; // Exit after setting TARGET_DATA
+        }
+        // Handle instruction for comparing data
+        if (ins == INS_COMPARE_DATA) {
+            short bytesRead = apdu.setIncomingAndReceive();
+            // Ensure the length matches
+            if (bytesRead != targetData.length) {
+                ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
+            }
+
+            // Compare the input data with targetData
+            boolean isMatch = Util.arrayCompare(buffer, ISO7816.OFFSET_CDATA, targetData, (short) 0, bytesRead) == 0;
+
+            // Prepare response
+            apdu.setOutgoing();
+            apdu.setOutgoingLength((short) 1);
+            buffer[0] = (byte) (isMatch ? 0x01 : 0x00); // 0x01 for true, 0x00 for false
+            apdu.sendBytes((short) 0, (short) 1);
+            return;
+        }
+    }
+}

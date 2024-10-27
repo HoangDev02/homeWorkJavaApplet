@@ -1,0 +1,85 @@
+/**
+ * Copyright (c) 1998, 2024, Oracle and/or its affiliates. All rights reserved.
+ * 
+ */
+
+package com.oracle.jcclassic.samples.helloworld;
+
+import javacard.framework.APDU;
+import javacard.framework.Applet;
+import javacard.framework.ISO7816;
+import javacard.framework.ISOException;
+import javacard.framework.Util;
+
+public class HelloWorld extends Applet {
+    private static final byte[] TARGET_DATA = { 'D', 'A', 'T', 'A', '_', 'A', 'B', 'C', 'D' };
+
+    /**
+     * Only this class's install method should create the applet object.
+     */
+    protected HelloWorld() {
+        register();
+    }
+
+    /**
+     * Installs this applet.
+     *
+     * @param bArray
+     *            the array containing installation parameters
+     * @param bOffset
+     *            the starting offset in bArray
+     * @param bLength
+     *            the length in bytes of the parameter data in bArray
+     */
+    public static void install(byte[] bArray, short bOffset, byte bLength) {
+        new HelloWorld();
+    }
+
+    /**
+     * Processes an incoming APDU.
+     *
+     * @see APDU
+     * @param apdu
+     *            the incoming APDU
+     * @exception ISOException
+     *                with the response bytes per ISO 7816-4
+     */
+    @Override 
+    public void process(APDU apdu) {
+        byte buffer[] = apdu.getBuffer();
+
+        // Check SELECT APDU command
+        if (selectingApplet()) {
+            return;
+        }
+
+        // Set the incoming data
+        short bytesRead = apdu.setIncomingAndReceive();
+        
+        // Ensure that the incoming data matches the length of the target data
+        if (bytesRead != TARGET_DATA.length) {
+            ISOException.throwIt(ISO7816.SW_DATA_INVALID);
+            return;
+        }
+
+        // Compare input data with TARGET_DATA
+        boolean isEqual = true;
+        for (short i = 0; i < TARGET_DATA.length; i++) {
+            // Access TARGET_DATA with a short index
+            if (buffer[ISO7816.OFFSET_CDATA + i] != TARGET_DATA[i]) {
+                isEqual = false;
+                break;
+            }
+        }
+
+        // Prepare response
+        apdu.setOutgoing();
+        apdu.setOutgoingLength((short) 1); // Send 1 byte (true/false)
+        
+        // Set the response byte
+        buffer[0] = (byte) (isEqual ? 1 : 0); // 1 for true, 0 for false
+        
+        // Send the response
+        apdu.sendBytesLong(buffer, (short) 0, (short) 1);
+    }
+}

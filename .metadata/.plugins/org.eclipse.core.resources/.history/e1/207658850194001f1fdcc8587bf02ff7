@@ -1,0 +1,170 @@
+package com.oracle.javacard.sample;
+
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Properties;
+import java.util.stream.IntStream;
+import java.util.Scanner;
+import javax.smartcardio.Card;
+import javax.smartcardio.CardChannel;
+import javax.smartcardio.CardException;
+import javax.smartcardio.CardTerminal;
+import javax.smartcardio.CommandAPDU;
+import javax.smartcardio.ResponseAPDU;
+import javax.smartcardio.TerminalFactory;
+
+import com.oracle.javacard.ams.AMService;
+import com.oracle.javacard.ams.AMServiceFactory;
+import com.oracle.javacard.ams.AMSession;
+import com.oracle.javacard.ams.config.AID;
+import com.oracle.javacard.ams.config.CAPFile;
+import com.oracle.javacard.ams.script.APDUScript;
+import com.oracle.javacard.ams.script.ScriptFailedException;
+import com.oracle.javacard.ams.script.Scriptable;
+
+public class AMSHelloWorldClient {
+
+    static final String isdAID = "aid:A000000151000000"; // AID của Service Descriptor
+    static final String sAID_CAP = "aid:a00000006203010C01"; // AID của CAP file
+    static final String sAID_AppletClass = "aid:a00000006203010C0101"; // AID của class applet
+    static final String sAID_AppletInstance = "aid:a00000006203010C0101"; // AID của instance applet
+    static final CommandAPDU selectApplet = new CommandAPDU(0x00, 0xA4, 0x04, 0x00, AID.from(sAID_AppletInstance).toBytes(), 256);
+
+    // INS value for comparing data
+    private static final byte INS_COMPARE_DATA = (byte) 0x10;
+
+    public static void main(String[] args) {
+        try {
+            CAPFile appFile = CAPFile.from(getArg(args, "cap"));
+            Properties props = new Properties();
+            props.load(new FileInputStream(getArg(args, "props")));
+
+            // Initialize Application Management Service
+            AMService ams = AMServiceFactory.getInstance("GP2.2");
+            ams.setProperties(props);
+
+            // Deploy CAPFile
+            AMSession deploy = ams.openSession(isdAID)
+                    .load(sAID_CAP, appFile.getBytes())
+                    .install(sAID_CAP, sAID_AppletClass, sAID_AppletInstance)
+                    .close();
+
+            // Unload CAPFile
+            AMSession undeploy = ams.openSession(isdAID)
+                    .uninstall(sAID_AppletInstance)
+                    .unload(sAID_CAP)
+                    .close();
+            
+            Scanner scanner = new Scanner(System.in);
+            System.out.print("Enter data (without spaces): ");
+            String inputData = scanner.nextLine();
+            byte[] dataBytes = inputData.getBytes();
+            // Test script: deploy, use and undeploy
+            TestScript testScript = new TestScript()
+                    .append(deploy)
+                    .append(selectApplet)
+                    .append(new CommandAPDU(0x80, INS_COMPARE_DATA, 0x00, 0x00,dataBytes),
+                            new ResponseAPDU(new byte[] { 0x01, (byte) 0x90, 0x00 })) // Expect 0x01 for true
+                    .append(undeploy);
+
+            // Execute the script
+            CardTerminal t = getTerminal("socket", "127.0.0.1", "9025");
+            Card c = t.connect("*");
+            List<ResponseAPDU> responses = testScript.run(c.getBasicChannel());
+            c.disconnect(true);
+
+            System.out.println("Response count: " + responses.size());
+
+        } catch (NoSuchAlgorithmException | NoSuchProviderException | CardException | ScriptFailedException
+                | IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static String getArg(String[] args, String argName) throws IllegalArgumentException {
+        String value = null;
+        for (String param : args) {
+            if (param.startsWith("-" + argName + "=")) {
+                value = param.substring(param.indexOf('=') + 1);
+            }
+        }
+        if (value == null || value.length() == 0) {
+            throw new IllegalArgumentException("Argument " + argName + " is missing");
+        }
+        return value;
+    }
+
+    private static CardTerminal getTerminal(String... connectionParams) throws NoSuchAlgorithmException, NoSuchProviderException, CardException {
+        TerminalFactory tf;
+        String connectivityType = connectionParams[0];
+        if (connectivityType.equals("socket")) {
+            String ipaddr = connectionParams[1];
+            String port = connectionParams[2];
+            tf = TerminalFactory.getInstance("SocketCardTerminalFactoryType",
+                    List.of(new InetSocketAddress(ipaddr, Integer.parseInt(port))),
+                    "SocketCardTerminalProvider");
+        } else {
+            tf = TerminalFactory.getDefault();
+        }
+        return tf.terminals().list().get(0);
+    }
+
+    import java.util.LinkedList;
+    import java.util.List;
+    import java.util.stream.IntStream;
+
+    private static class TestScript extends APDUScript {
+        private List<CommandAPDU> commands = new LinkedList<>();
+        private List<ResponseAPDU> responses = new LinkedList<>();
+
+        public List<ResponseAPDU> run(CardChannel channel) throws ScriptFailedException {
+            return super.run(channel, this::lookupIndex, response -> !isExpected(response));
+        }
+
+        public TestScript append(CommandAPDU apdu, ResponseAPDU expected) {
+            commands.add(apdu);
+            responses.add(expected);
+            return this;
+        }
+
+        private int lookupIndex(CommandAPDU apdu) {
+            print(apdu);
+            return IntStream.range(0, commands.size())
+                    .filter(i -> apdu.equals(commands.get(i))) // Use equals() for comparison
+                    .findFirst()
+                    .orElse(-1);
+        }
+
+        private boolean isExpected(ResponseAPDU response) {
+            int index = lookupIndex(response);
+            boolean matches = index >= 0 && response.equals(responses.get(index));
+            System.out.println(matches); // Print true or false
+            return matches;
+        }
+
+        private static void print(CommandAPDU apdu) {
+            StringBuilder sb = new StringBuilder();
+            sb.append(String.format("%02X%02X%02X%02X %02X[", apdu.getCLA(), apdu.getINS(), apdu.getP1(), apdu.getP2(), apdu.getNc()));
+            for (byte b : apdu.getData()) {
+                sb.append(String.format("%02X", b));
+            }
+            sb.append("]");
+            System.out.format("[%1$tF %1$tT %1$tL %1$tZ] [APDU-C] %2$s %n", System.currentTimeMillis(), sb.toString());
+        }
+
+        private static void print(ResponseAPDU apdu) {
+            byte[] bytes = apdu.getData();
+            StringBuilder sb = new StringBuilder();
+            for (byte b : bytes) {
+                sb.append(String.format("%02X", b));
+            }
+            System.out.format("[%1$tF %1$tT %1$tL %1$tZ] [APDU-R] [%2$s] SW:%3$04X %n", System.currentTimeMillis(), sb.toString(), apdu.getSW());
+        }
+    }
+
+}

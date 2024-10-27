@@ -1,0 +1,7 @@
+package com.example.myapplet;
+
+import javacard.framework.Applet;
+
+public class MyApplet extends Applet {
+
+}

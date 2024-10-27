@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<launchConfiguration type="com.oracle.javacard.jcdk.launch.runconfiguration.jcAppletRun">
+    <booleanAttribute key="org.eclipse.debug.core.ATTR_FORCE_SYSTEM_CONSOLE_ENCODING" value="false"/>
+    <stringAttribute key="org.eclipse.jdt.launching.MAIN_TYPE" value="javacard.framework.Applet"/>
+    <stringAttribute key="org.eclipse.jdt.launching.PROJECT_ATTR" value="HelloWorld - Applet"/>
+    <stringAttribute key="run_commands_list" value=""/>
+</launchConfiguration>
