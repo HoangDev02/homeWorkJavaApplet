@@ -86,7 +86,7 @@ public class AMSMyApplet {
 
 			TestScript testScript = new TestScript().append(deploy).append(selectApplet).append(setTargetDataAPDU)
 					.append(compareDataAPDU, new ResponseAPDU(new byte[] { 0x01, (byte) 0x90, 0x00 })) // Expected
-					.append(undeploy);
+				.append(undeploy);
 
 			CardTerminal terminal = getTerminal("socket", "127.0.0.1", "9025");
 			Card card = terminal.connect("*");

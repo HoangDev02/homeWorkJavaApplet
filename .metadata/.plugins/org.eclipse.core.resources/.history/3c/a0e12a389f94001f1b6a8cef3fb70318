@@ -37,9 +37,10 @@ public class AMSMyApplet {
 	static final CommandAPDU selectApplet = new CommandAPDU(0x00, 0xA4, 0x04, 0x00,
 			AID.from(sAID_AppletInstance).toBytes(), 256);
 
-
+	// INS values based on applet definitions
 	private static final byte INS_SET_TARGET_DATA = (byte) 0x30;
 	private static final byte INS_COMPARE_DATA = (byte) 0x10;
+	private static final byte INS_ENCRYPT_DATA = (byte) 0x20;
 
 	public static void main(String[] args) {
 		try {
@@ -84,9 +85,13 @@ public class AMSMyApplet {
 
 			CommandAPDU compareDataAPDU = new CommandAPDU(0x80, INS_COMPARE_DATA, 0x00, 0x00, dataBytes);
 
+			CommandAPDU encryptDataAPDU = new CommandAPDU(0x80, INS_ENCRYPT_DATA, 0x00, 0x00, inputBytes);
+
 			TestScript testScript = new TestScript().append(deploy).append(selectApplet).append(setTargetDataAPDU)
 					.append(compareDataAPDU, new ResponseAPDU(new byte[] { 0x01, (byte) 0x90, 0x00 })) // Expected
-					.append(undeploy);
+																										// response for
+																										// comparison
+					.append(encryptDataAPDU).append(undeploy);
 
 			CardTerminal terminal = getTerminal("socket", "127.0.0.1", "9025");
 			Card card = terminal.connect("*");
@@ -100,7 +105,7 @@ public class AMSMyApplet {
 		}
 	}
 
-	private static String getArg(String[] args, String argName) throws IllegalArgumentException  {
+	private static String getArg(String[] args, String argName) {
 		for (String param : args) {
 			if (param.startsWith("-" + argName + "=")) {
 				return param.substring(param.indexOf('=') + 1);
@@ -129,7 +134,7 @@ public class AMSMyApplet {
 		private List<ResponseAPDU> responses = new LinkedList<>();
 		private int index = 0;
 
-		public List<ResponseAPDU> run(CardChannel channel) throws ScriptFailedException  {
+		public List<ResponseAPDU> run(CardChannel channel) {
 			return super.run(channel, c -> lookupIndex(c), r -> !isExpected(r));
 		}
 
