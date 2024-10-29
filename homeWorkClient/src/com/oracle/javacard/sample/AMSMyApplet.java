@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
@@ -37,10 +38,11 @@ public class AMSMyApplet {
 	static final CommandAPDU selectApplet = new CommandAPDU(0x00, 0xA4, 0x04, 0x00,
 			AID.from(sAID_AppletInstance).toBytes(), 256);
 
-
 	private static final byte INS_SET_TARGET_DATA = (byte) 0x30;
 	private static final byte INS_COMPARE_DATA = (byte) 0x10;
+	private static final byte INS_ENCRYPT_DATA = (byte) 0x20;
 
+	
 	public static void main(String[] args) {
 		try {
 			CAPFile appFile = CAPFile.from(getArg(args, "cap"));
@@ -55,7 +57,7 @@ public class AMSMyApplet {
 			AMSession undeploy = ams.openSession(isdAID).uninstall(sAID_AppletInstance).unload(sAID_CAP).close();
 
 			Scanner scanner = new Scanner(System.in);
-			
+
 			String inputApplet;
 			do {
 				System.out.print("Enter Input Applet (must be 9 characters): ");
@@ -83,10 +85,12 @@ public class AMSMyApplet {
 			CommandAPDU setTargetDataAPDU = new CommandAPDU(0x80, INS_SET_TARGET_DATA, 0x00, 0x00, inputBytes);
 
 			CommandAPDU compareDataAPDU = new CommandAPDU(0x80, INS_COMPARE_DATA, 0x00, 0x00, dataBytes);
+			CommandAPDU encryptCommand = new CommandAPDU(0x80, INS_ENCRYPT_DATA, 0x00, 0x00, inputBytes);
+		
 
 			TestScript testScript = new TestScript().append(deploy).append(selectApplet).append(setTargetDataAPDU)
 					.append(compareDataAPDU, new ResponseAPDU(new byte[] { 0x01, (byte) 0x90, 0x00 })) // Expected
-					.append(undeploy);
+					.append(encryptCommand).append(undeploy);
 
 			CardTerminal terminal = getTerminal("socket", "127.0.0.1", "9025");
 			Card card = terminal.connect("*");
@@ -100,7 +104,7 @@ public class AMSMyApplet {
 		}
 	}
 
-	private static String getArg(String[] args, String argName) throws IllegalArgumentException  {
+	private static String getArg(String[] args, String argName) throws IllegalArgumentException {
 		for (String param : args) {
 			if (param.startsWith("-" + argName + "=")) {
 				return param.substring(param.indexOf('=') + 1);
@@ -129,7 +133,7 @@ public class AMSMyApplet {
 		private List<ResponseAPDU> responses = new LinkedList<>();
 		private int index = 0;
 
-		public List<ResponseAPDU> run(CardChannel channel) throws ScriptFailedException  {
+		public List<ResponseAPDU> run(CardChannel channel) throws ScriptFailedException {
 			return super.run(channel, c -> lookupIndex(c), r -> !isExpected(r));
 		}
 
@@ -160,15 +164,31 @@ public class AMSMyApplet {
 			return apdu;
 		}
 
-		private boolean isExpected(ResponseAPDU response) {
-			ResponseAPDU expected = (index < 0) ? null : this.responses.get(index);
-			boolean matches = expected == null || response.equals(expected);
-
-			if (index >= 0 && this.commands.get(index).getINS() == INS_COMPARE_DATA) {
-				System.out.println("INS_COMPARE_DATA: " + matches);
+		private static String bytesToHex(byte[] bytes) {
+			StringBuilder sb = new StringBuilder();
+			for (byte b : bytes) {
+				sb.append(String.format("%02X", b));
 			}
+			return sb.toString();
+		}
 
+		private boolean isExpected(ResponseAPDU response) {
+			logResponseData(response);
 			return true;
+		}
+
+		private void logResponseData(ResponseAPDU response) {
+			if (index >= 0) {
+				switch (commands.get(index).getINS()) {
+				case INS_COMPARE_DATA:
+					System.out.println("INS_COMPARE_DATA: " + response.equals(responses.get(index)));
+					break;
+				case INS_ENCRYPT_DATA:
+					System.out.println("INS_ENCRYPT_DATA: " + bytesToHex(response.getData()));
+					break;
+			
+				}
+			}
 		}
 	}
 

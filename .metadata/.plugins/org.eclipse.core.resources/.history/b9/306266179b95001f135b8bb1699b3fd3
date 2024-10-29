@@ -1,0 +1,7 @@
+package com.oracle.javacard.sample;
+
+public class configINS {
+	public static final byte INS_SET_TARGET_DATA = (byte) 0x30;
+	public static final byte INS_COMPARE_DATA = (byte) 0x10;
+	public static final byte INS_ENCRYPT_DATA = (byte) 0x20;
+}

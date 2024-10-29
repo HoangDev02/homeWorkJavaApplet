@@ -1,0 +1,5 @@
+package com.oracle.javacard.sample;
+
+public class TestScript {
+
+}

@@ -1,0 +1,20 @@
+#Sample_Device
+#Sun Oct 27 07:18:29 ICT 2024
+log_lvl=none
+description=Device for running samples
+forward_runtime_logs=false
+protocol=0
+uart_port=
+proxy2cref_port=7019
+proxy2jot_port=7019
+auto_connect=false
+config_file=C\:\\JC_HOME_SIMULATOR\\java_card_devkit_simulator-win-bin-v24.0-b_55-20-FEB-2024\\samples\\client.config.properties
+comm_type=Sockets
+e2p_filename=
+redirect_log_file=
+port=9025
+output_filename=
+uart=false
+proxy2ide_port=8000
+no_apdu_console=false
+input_filename=

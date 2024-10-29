@@ -1,9 +1,16 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <qualifiedTypeNameHistroy>
     <fullyQualifiedTypeName name="java.applet.Applet"/>
-    <fullyQualifiedTypeName name="javax.smartcardio.CommandAPDU"/>
     <fullyQualifiedTypeName name="javax.smartcardio.TerminalFactory"/>
     <fullyQualifiedTypeName name="javax.smartcardio.CardTerminals"/>
     <fullyQualifiedTypeName name="javax.smartcardio.CardTerminal"/>
     <fullyQualifiedTypeName name="java.util.List"/>
+    <fullyQualifiedTypeName name="javacard.security.AESKey"/>
+    <fullyQualifiedTypeName name="javacardx.crypto.Cipher"/>
+    <fullyQualifiedTypeName name="javacard.framework.APDU"/>
+    <fullyQualifiedTypeName name="com.oracle.javacard.ams.AMSession"/>
+    <fullyQualifiedTypeName name="javax.smartcardio.CommandAPDU"/>
+    <fullyQualifiedTypeName name="java.util.Arrays"/>
+    <fullyQualifiedTypeName name="javacardx.framework.nio.Buffer"/>
+    <fullyQualifiedTypeName name="com.oracle.javacard.sample.configINS"/>
 </qualifiedTypeNameHistroy>

@@ -1,0 +1,78 @@
+package com.oracle.javacard.sample;
+
+import java.util.LinkedList;
+import java.util.List;
+import java.util.stream.IntStream;
+
+import javax.smartcardio.CardChannel;
+import javax.smartcardio.CommandAPDU;
+import javax.smartcardio.ResponseAPDU;
+
+import com.oracle.javacard.ams.script.APDUScript;
+import com.oracle.javacard.ams.script.ScriptFailedException;
+import com.oracle.javacard.ams.script.Scriptable;
+
+
+public class TestScript extends APDUScript {
+	private List<CommandAPDU> commands = new LinkedList<>();
+	private List<ResponseAPDU> responses = new LinkedList<>();
+	private int index = 0;
+
+	public List<ResponseAPDU> run(CardChannel channel) throws ScriptFailedException {
+		return super.run(channel, c -> lookupIndex(c), r -> !isExpected(r));
+	}
+
+	@Override
+	public TestScript append(Scriptable<CardChannel, CommandAPDU, ResponseAPDU> other) {
+		super.append(other);
+		return this;
+	}
+
+	public TestScript append(CommandAPDU apdu, ResponseAPDU expected) {
+		this.commands.add(apdu);
+		this.responses.add(expected);
+		super.append(apdu);
+		return this;
+	}
+
+	public TestScript append(CommandAPDU apdu) {
+		this.commands.add(apdu);
+		this.responses.add(null);
+		super.append(apdu);
+		return this;
+	}
+
+	private CommandAPDU lookupIndex(CommandAPDU apdu) {
+//        print(apdu);
+		this.index = IntStream.range(0, this.commands.size()).filter(i -> apdu.equals(this.commands.get(i))) // comparison
+				.findFirst().orElse(-1);
+		return apdu;
+	}
+
+	private static String bytesToHex(byte[] bytes) {
+		StringBuilder sb = new StringBuilder();
+		for (byte b : bytes) {
+			sb.append(String.format("%02X", b));
+		}
+		return sb.toString();
+	}
+
+	private boolean isExpected(ResponseAPDU response) {
+		logResponseData(response);
+		return true;
+	}
+
+	private void logResponseData(ResponseAPDU response) {
+		if (index >= 0) {
+			switch (commands.get(index).getINS()) {
+			case INS_COMPARE_DATA:
+				System.out.println("INS_COMPARE_DATA: " + response.equals(responses.get(index)));
+				break;
+			case INS_ENCRYPT_DATA:
+				System.out.println("INS_ENCRYPT_DATA: " + bytesToHex(response.getData()));
+				break;
+
+			}
+		}
+	}
+}

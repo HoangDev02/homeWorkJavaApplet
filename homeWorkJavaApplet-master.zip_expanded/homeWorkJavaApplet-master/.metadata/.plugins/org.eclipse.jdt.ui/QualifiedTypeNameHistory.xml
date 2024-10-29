@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<qualifiedTypeNameHistroy>
+    <fullyQualifiedTypeName name="java.applet.Applet"/>
+    <fullyQualifiedTypeName name="javax.smartcardio.CommandAPDU"/>
+    <fullyQualifiedTypeName name="javax.smartcardio.TerminalFactory"/>
+    <fullyQualifiedTypeName name="javax.smartcardio.CardTerminals"/>
+    <fullyQualifiedTypeName name="javax.smartcardio.CardTerminal"/>
+    <fullyQualifiedTypeName name="java.util.List"/>
+</qualifiedTypeNameHistroy>
