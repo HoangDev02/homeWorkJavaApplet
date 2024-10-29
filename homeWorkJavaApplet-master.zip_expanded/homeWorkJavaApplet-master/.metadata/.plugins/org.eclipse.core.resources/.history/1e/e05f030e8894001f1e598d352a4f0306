@@ -1,7 +1,0 @@
-package com.oracle.jcclassic.samples.helloworld;
-
-import javacard.framework.Applet;
-
-public class hhi extends Applet {
-
-}
